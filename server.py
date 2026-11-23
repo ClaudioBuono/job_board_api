@@ -1,7 +1,4 @@
-# ============================================================
-#  BACK-END "Bacheca annunci di lavoro"  (parte 1: R1, R2, R3)
-#  Python + Flask. Dati salvati in un file JSON (persistenti).
-# ============================================================
+from datetime import datetime, timezone
 import json
 import os
 import secrets
@@ -119,6 +116,42 @@ def logout():
     return jsonify(ok=True)
 
 
+# ================= R4 - Pubblicazione annuncio (solo azienda loggata) =================
+@app.post('/api/jobs')
+@auth
+def create_job():
+    data = request.get_json(silent=True) or {}
+    title = str(data.get('title', '')).strip()
+    description = str(data.get('description', '')).strip()
+    if not title or not description:
+        return jsonify(error='Titolo e descrizione sono obbligatori'), 400
+ 
+    job = {
+        'id': str(uuid.uuid4()),
+        'companyId': g.company_id,  # messo da @auth: l'annuncio appartiene all'azienda loggata
+        'title': title,
+        'description': description,
+        'createdAt': datetime.now(timezone.utc).isoformat(),
+    }
+    with lock:
+        db['jobs'].append(job)
+        save_db()
+    return jsonify(job), 201
+ 
+ 
+# ================= R5 - Consultazione bacheca (pubblica, senza login) =================
+def company_name(company_id):
+    company = next((c for c in db['companies'] if c['id'] == company_id), None)
+    return company['name'] if company else 'Azienda'
+ 
+ 
+@app.get('/api/jobs')
+def list_jobs():
+    # dal più recente al più vecchio, aggiungendo il nome dell'azienda
+    jobs = [{**job, 'companyName': company_name(job['companyId'])} for job in reversed(db['jobs'])]
+    return jsonify(jobs)
+ 
+ 
 if __name__ == '__main__':
     # host 0.0.0.0 = raggiungibile anche dal telefono (stessa rete Wi-Fi)
     app.run(host='0.0.0.0', port=PORT)
