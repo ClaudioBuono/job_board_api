@@ -1,0 +1,24 @@
+# Ambiente virtuale
+venv/
+.venv/
+env/
+
+# File generati da Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Dati dell'app (database JSON e curriculum caricati)
+data/
+uploads/
+
+# File dei programmi di sviluppo
+.idea/
+.vscode/
+
+# File di sistema
+.DS_Store
+Thumbs.db
+
+# Variabili d'ambiente e segreti
+.env
